@@ -8,8 +8,9 @@
     "start": "next start",
     "worker:dev": "wrangler dev src/api/index.ts",
     "worker:deploy": "wrangler deploy src/api/index.ts",
-    "test": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test": "vitest --watch",
+    "test:coverage": "vitest run --coverage",
+    "test:ci": "vitest run"
   },
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250214.0",
