@@ -104,6 +104,25 @@ describe('User Management API', () => {
       expect(await res.json()).toEqual({ message: 'Profile updated successfully' });
     });
 
+    it('should handle database error in profile update', async () => {
+      mockDB.prepare.mockReturnValue({
+        bind: vi.fn().mockReturnThis(),
+        first: vi.fn().mockResolvedValue({ id: '123' }),
+        run: vi.fn().mockRejectedValue(new Error('DB Error')),
+      });
+
+      const res = await app.request('/api/users/me', {
+        method: 'PUT',
+        headers: {
+          'Cf-Access-Authenticated-User-Email': 'test@example.com',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: 'New Name' }),
+      });
+      expect(res.status).toBe(500);
+      expect(await res.json()).toEqual({ error: 'Internal server error' });
+    });
+
     it('should reject empty name', async () => {
       const res = await app.request('/api/users/me', {
         method: 'PUT',
@@ -178,6 +197,22 @@ describe('User Management API', () => {
       responses.forEach(res => {
         expect(res.status).toBe(200);
       });
+    });
+
+    it('should handle database error in heartbeat update', async () => {
+      mockDB.prepare.mockReturnValue({
+        bind: vi.fn().mockReturnThis(),
+        run: vi.fn().mockRejectedValue(new Error('DB Error')),
+      });
+
+      const res = await app.request('/api/users/me/heartbeat', {
+        method: 'POST',
+        headers: {
+          'Cf-Access-Authenticated-User-Email': 'test@example.com',
+        },
+      });
+      expect(res.status).toBe(500);
+      expect(await res.json()).toEqual({ error: 'Internal server error' });
     });
   });
 });
