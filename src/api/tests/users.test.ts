@@ -103,6 +103,32 @@ describe('User Management API', () => {
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({ message: 'Profile updated successfully' });
     });
+
+    it('should reject empty name', async () => {
+      const res = await app.request('/api/users/me', {
+        method: 'PUT',
+        headers: {
+          'Cf-Access-Authenticated-User-Email': 'test@example.com',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: '' }),
+      });
+      expect(res.status).toBe(400);
+      expect(await res.json()).toHaveProperty('error', 'Invalid input');
+    });
+
+    it('should reject missing name field', async () => {
+      const res = await app.request('/api/users/me', {
+        method: 'PUT',
+        headers: {
+          'Cf-Access-Authenticated-User-Email': 'test@example.com',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(400);
+      expect(await res.json()).toHaveProperty('error', 'Invalid input');
+    });
   });
 
   describe('POST /api/users/me/heartbeat', () => {
@@ -128,6 +154,30 @@ describe('User Management API', () => {
       });
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({ message: 'Heartbeat updated' });
+    });
+
+    it('should handle concurrent heartbeat updates', async () => {
+      const mockRun = vi.fn().mockResolvedValue({ success: true });
+      mockDB.prepare.mockReturnValue({
+        bind: vi.fn().mockReturnThis(),
+        run: mockRun,
+      });
+
+      const requests = Array(3).fill(null).map(() => 
+        app.request('/api/users/me/heartbeat', {
+          method: 'POST',
+          headers: {
+            'Cf-Access-Authenticated-User-Email': 'test@example.com',
+          },
+        })
+      );
+
+      const responses = await Promise.all(requests);
+      
+      expect(mockRun).toHaveBeenCalledTimes(3);
+      responses.forEach(res => {
+        expect(res.status).toBe(200);
+      });
     });
   });
 });
