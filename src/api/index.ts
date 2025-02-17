@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { authMiddleware } from './middleware/auth';
+import { authMiddleware } from './middleware/auth.js';
+import users from './routes/users';
 
 const api = new Hono();
 
@@ -13,10 +14,8 @@ api.get('/health', (c) => c.json({ status: 'ok' }));
 // Protected routes
 api.use('/api/*', authMiddleware);
 
-// Initialize routes
-api.get('/api/me', (c) => {
-  return c.json({ message: 'Protected endpoint' });
-});
+// Mount user routes
+api.route('/api/users', users);
 
 export default {
   fetch: api.fetch,
