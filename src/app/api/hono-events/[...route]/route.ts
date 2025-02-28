@@ -10,13 +10,32 @@ app.get('/', (c) => {
   const customReadable = new ReadableStream({
     start(controller) {
       let count = 0;
+      let isActive = true;
+      
       const interval = setInterval(() => {
-        const message = `data: ${JSON.stringify({ count: count++, source: 'hono' })}\n\n`;
-        controller.enqueue(encoder.encode(message));
+        if (!isActive) {
+          clearInterval(interval);
+          return;
+        }
+        
+        try {
+          const message = `data: ${JSON.stringify({ count: count++, source: 'hono' })}\n\n`;
+          controller.enqueue(encoder.encode(message));
+        } catch (error) {
+          console.error('SSEエラー:', error);
+          clearInterval(interval);
+          isActive = false;
+          try {
+            controller.close();
+          } catch (closeError) {
+            // すでにクローズされている場合は無視
+          }
+        }
       }, 1000);
 
       // クリーンアップ
       return () => {
+        isActive = false;
         clearInterval(interval);
       };
     },
@@ -38,13 +57,32 @@ app.get('/:id', (c) => {
   const customReadable = new ReadableStream({
     start(controller) {
       let count = 0;
+      let isActive = true;
+      
       const interval = setInterval(() => {
-        const message = `data: ${JSON.stringify({ count: count++, id, source: 'hono' })}\n\n`;
-        controller.enqueue(encoder.encode(message));
+        if (!isActive) {
+          clearInterval(interval);
+          return;
+        }
+        
+        try {
+          const message = `data: ${JSON.stringify({ count: count++, id, source: 'hono' })}\n\n`;
+          controller.enqueue(encoder.encode(message));
+        } catch (error) {
+          console.error('SSEエラー:', error);
+          clearInterval(interval);
+          isActive = false;
+          try {
+            controller.close();
+          } catch (closeError) {
+            // すでにクローズされている場合は無視
+          }
+        }
       }, 1000);
 
       // クリーンアップ
       return () => {
+        isActive = false;
         clearInterval(interval);
       };
     },
